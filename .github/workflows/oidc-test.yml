@@ -26,20 +26,21 @@ jobs:
       # 2. Create deployment artifact
       - name: Create CodeDeploy revision
 	run: |
-	  echo "Creating CodeDeploy revision..."
+	   echo "Creating CodeDeploy revision..."
 
-	  mkdir -p artifcats
-	  zip -r "artifacts/cloudops-app-${GITHUB_SHA}.zip" \
-	    appspec.yml \
-	    app \
-	    scripts
-	  
-	  echo "CodeDeploy revision created:"
-	  ls -lh artifacts/
-	 
-	  echo ""
-	  echo "Revision contents:"
-	  unzip -l "artifacts/cloudops-app-${GITHUB_SHA}.zip"
+    	   mkdir -p artifacts
+
+    	   zip -r "artifacts/cloudops-app-${GITHUB_SHA}.zip" \
+      	     appspec.yml \
+             app \
+             scripts
+
+        echo "CodeDeploy revision created:"
+        ls -lh artifacts/
+
+        echo ""
+        echo "Revision contents:"
+        unzip -l "artifacts/cloudops-app-${GITHUB_SHA}.zip"
 
       # 3. Configure AWS using GitHub OIDC
       - name: Configure AWS credentials
