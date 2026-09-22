@@ -1,22 +1,68 @@
-name: AWS OIDC Test
+name: Build and Upload Artifact
 
 on:
+  push:
+    branches:
+      - main
+
   workflow_dispatch:
 
 permissions:
   id-token: write
   contents: read
 
+env:
+  AWS_REGION: us-east-1
+
 jobs:
-  aws-oidc-test:
+  build-and-upload:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Show GitHub OIDC identity information
+
+      # 1. Checkout source code
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # 2. Create deployment artifact
+      - name: Create application artifact
         run: |
-          echo "Repository       : $GITHUB_REPOSITORY"
-          echo "Repository ID    : ${{ github.repository_id }}"
-          echo "Owner            : ${{ github.repository_owner }}"
-          echo "Owner ID         : ${{ github.repository_owner_id }}"
-          echo "Ref              : $GITHUB_REF"
-          echo "Event            : ${{ github.event_name }}"
+          echo "Creating application artifact..."
+
+          mkdir -p artifacts
+
+          zip -r "artifacts/cloudops-app-${GITHUB_SHA}.zip" app
+
+          echo "Artifact created:"
+          ls -lh artifacts/
+
+      # 3. Configure AWS using GitHub OIDC
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v5
+        with:
+          role-to-assume: arn:aws:iam::915993063181:role/CloudOps-GitHubActions-Role
+          aws-region: ${{ env.AWS_REGION }}
+
+      # 4. Verify AWS identity
+      - name: Verify AWS identity
+        run: |
+          echo "AWS identity:"
+          aws sts get-caller-identity
+
+      # 5. Upload artifact to S3
+      - name: Upload artifact to S3
+        run: |
+          echo "Uploading artifact to S3..."
+
+          aws s3 cp \
+            "artifacts/cloudops-app-${GITHUB_SHA}.zip" \
+            "s3://${{ vars.S3_BUCKET }}/artifacts/"
+
+          echo "Upload completed."
+
+      # 6. Verify uploaded artifact
+      - name: Verify S3 artifact
+        run: |
+          echo "S3 artifacts:"
+          aws s3 ls \
+            "s3://${{ vars.S3_BUCKET }}/artifacts/"
